@@ -68,7 +68,7 @@ class CKANUploader(object):
             return id_or_name in avalailable_datasets
         else:
             # Considero que estoy buscando una distribution
-            all_distributions = self._get_all_distrubutions()
+            all_distributions = self.get_all_distrubutions()
             dist_by_ids = [_id for _id in all_distributions.keys()]
             dist_by_name = [_name for _name in all_distributions]
             return id_or_name in dist_by_ids or id_or_name in dist_by_name
@@ -80,7 +80,7 @@ class CKANUploader(object):
         :return:
         """
 
-    def _get_all_distrubutions(self):
+    def get_all_distrubutions(self):
         """
         Diccionario de distrubuciones disponibles en el CKAN remoto: self.ckan_url.
 
@@ -95,12 +95,13 @@ class CKANUploader(object):
         distributions = {}
         all_datasets = self.my_remote_ckan.action.package_list()
         for dataset in all_datasets:
-            ds_dist = self.my_remote_ckan.action.package_show(dataset)['resources']
+            ds_dist = self.my_remote_ckan.call_action('package_show', {'id': dataset})
+            ds_dist = ds_dist['resources']
             for d in ds_dist:
                 distributions.update({d['id']: d['name']})
         return distributions
 
-    def _get_datasets_list(self, only_names=True):
+    def get_datasets_list(self, only_names=True):
         """
         Obtener lista de Datasets y Recursos remotos.
 
