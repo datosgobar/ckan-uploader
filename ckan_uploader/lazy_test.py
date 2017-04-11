@@ -1,0 +1,1 @@
+from ckan-uploader import CKANUploader
