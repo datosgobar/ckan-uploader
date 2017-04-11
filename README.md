@@ -5,7 +5,17 @@
 # ckan-uploader
 Librería de python para la carga y actualizacion de recursos remotos en una plataforma `CKAN 2.5.3+`
 
+Development:
+---
 - [Instalación](http://ckan-uploader.readthedocs.io/es/development/development/)
 - [Uso](http://ckan-uploader.readthedocs.io/es/development/development/)
 - [Test](http://ckan-uploader.readthedocs.io/es/development/development/)
 - [Créditos](http://ckan-uploader.readthedocs.io/es/development/credits/)
+
+
+Production:
+---
+- [Instalación](http://ckan-uploader.readthedocs.io/es/production/development/)
+- [Uso](http://ckan-uploader.readthedocs.io/es/production/development/)
+- [Test](http://ckan-uploader.readthedocs.io/es/production/development/)
+- [Créditos](http://ckan-uploader.readthedocs.io/es/production/credits/)
