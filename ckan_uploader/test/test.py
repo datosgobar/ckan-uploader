@@ -72,7 +72,7 @@ def test_05_search_for_a_dataset():
 
 def test_06_search_for_a_distribution():
     """
-    Buscar Dataset.
+    Buscar Distributions.
 
     Hipotesis:
     =========
@@ -81,3 +81,29 @@ def test_06_search_for_a_distribution():
     """
     cl = CKANUploader('http://demo.ckan.org', 'c381dae0-fe59-48ee-b543-a240e0087dfa')
     assert_equals(isinstance(cl.exists('my_distribution', search_for_datasets=False), bool), True)
+
+
+def test_07_get_datasets_list_returns_always_a_list():
+    """
+    Obtener lista de datasets.
+
+    Hipotesis:
+    =========
+        Cualquiera fuera el caso de test, get_datasets_list(), responde una lista.
+
+    """
+    cl = CKANUploader('http://demo.ckan.org', 'c381dae0-fe59-48ee-b543-a240e0087dfa')
+    assert_equals(isinstance(cl.get_datasets_list(), list), True)
+
+
+def test_08_get_all_distributions_returns_always_a_dict():
+    """
+    Obtener lista de datasets.
+
+    Hipotesis:
+    =========
+        Cualquiera fuera el caso de test, get_datasets_list(), responde un diccionario.
+
+    """
+    cl = CKANUploader('http://demo.ckan.org', 'c381dae0-fe59-48ee-b543-a240e0087dfa')
+    assert_equals(isinstance(cl.get_all_distrubutions(), dict), True)
