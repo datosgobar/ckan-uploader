@@ -1,4 +1,6 @@
 # -*- coding:utf-8 -*-
+from models import Dataset, Distribution
+from ckanapi import NotAuthorized, ValidationError
 
 
 class CKANUploader(object):
@@ -73,12 +75,76 @@ class CKANUploader(object):
             dist_by_name = [_name for _name in all_distributions]
             return id_or_name in dist_by_ids or id_or_name in dist_by_name
 
-    def update(self, datadict=None):
+    @staticmethod
+    def _render_name(title=None, _encoding='utf-8'):
+        """
+        Formatea cadenas de textos a formato de nombres para ckan.
+
+        Este metodo aplica las siguientes transformaciones:
+        - Cambiar espacios por guiones medios.
+        - Toda la frase en minusculas.
+        - Quita caracteres que no sean alfanumericos.
+
+        Args:
+            - name: str() o unicode().
+        Returns:
+            - str:
+        """
+        import re
+        import unicodedata
+
+        def strip_accents(text):
+            """Quitar acentos."""
+            try:
+                text = unicode(text, _encoding)
+            except NameError:  # unicode is a default on python 3
+                pass
+            text = unicodedata.normalize('NFD', text)
+            text = text.encode('ascii', 'ignore')
+            text = text.decode("utf-8")
+            return str(text)
+
+        text = strip_accents(title.lower())
+        text = re.sub('[ ]+', '-', text)
+        text = re.sub('[^0-9a-zA-Z_-]', '', text)
+        return text
+
+    def create_dataset(self, dataset=None):
+        """
+        Crea un nuevo dataset en un CKAN remoto.
+
+        Args:
+             - dataset:
+        Returns:
+             - TODO.
+        """
+        status = False
+        if not isinstance(dataset, Dataset):
+            raise TypeError
+        try:
+            ds_name = self._render_name(dataset.title)
+            self.my_remote_ckan.action.package_create(name=ds_name,
+                                                      title=dataset.title,
+                                                      notes=dataset.notes,
+                                                      license_url=dataset.extras,
+                                                      url=dataset.url,
+                                                      owner_org=dataset.organization)
+            status = True
+        except NotAuthorized:
+            print 'No posee los permisos requeridos para crear el dataset {}'.format(dataset.title)
+        except ValidationError:
+            print 'No es posible crear el dataset {}, el mismo ya existe.'.format(dataset.title)
+        return status
+
+    def update(self, dataset=None):
         """
         Actualizar Datasets o Distribuciones.
 
-        :return:
+        Args:
+            - dataset: Da
         """
+        if not isinstance(dataset, Dataset):
+            raise TypeError
 
     def get_all_distrubutions(self):
         """
@@ -123,4 +189,38 @@ class CKANUploader(object):
         else:
             return self.my_remote_ckan.action.package_search()['results']
 
+    if __name__ == '__main__':
+        def save(self, dataset=None):
+            """
+            Guarda un dataset dentro de CKAN.
 
+            Si el dataset existe, lo actualiza, si no, lo creo.
+            De la misma manera son tratadas las distribuciones que el mismo contenga.
+
+            Args:
+                - dataset: Dataset().
+            Returns:
+                 - bool():
+                    - True se salvo correctamente el dataset.
+                    - False: Fallo la carga del dataset.
+            """
+            if not isinstance(dataset, (Dataset, list)):
+                raise TypeError
+            if isinstance(dataset, list):
+                # Si es una lista, solo voy a intentar salvar los
+                #  que son instancias de la clase Dataset.
+                for o in dataset:
+                    if isinstance(o, dataset):
+                        self.save(o)
+                    else:
+                        # Si dataset[n] no es Dataset lo omito.
+                        pass
+            if self.exists(id_or_name=dataset.name):
+                # Actualizo el dataset.
+                pass
+            else:
+                # Caso contrario, lo actualizo.
+                try:
+                    self.update(dataset=dataset)
+                except NotAuthorized:
+                    return False
