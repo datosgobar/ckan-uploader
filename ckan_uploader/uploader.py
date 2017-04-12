@@ -122,29 +122,36 @@ class CKANUploader(object):
         if not isinstance(dataset, Dataset):
             raise TypeError
         try:
-            ds_name = self._render_name(dataset.title)
-            self.my_remote_ckan.action.package_create(name=ds_name,
-                                                      title=dataset.title,
-                                                      notes=dataset.notes,
-                                                      license_url=dataset.extras,
-                                                      url=dataset.url,
-                                                      owner_org=dataset.organization)
+            dataset.name = self._render_name(dataset.title)
+            dataset.groups = self.build_groups(dataset.groups)
+            self.my_remote_ckan.action.package_create(**dataset.__dict__)
             status = True
         except NotAuthorized:
             print 'No posee los permisos requeridos para crear el dataset {}'.format(dataset.title)
         except ValidationError:
-            print 'No es posible crear el dataset {}, el mismo ya existe.'.format(dataset.title)
+            print 'No es posible crear el dataset \"{}\", el mismo ya existe.'.format(dataset.title)
         return status
 
-    def update(self, dataset=None):
+    def update_dataset(self, dataset=None):
         """
         Actualizar Datasets o Distribuciones.
 
         Args:
-            - dataset: Da
+            - dataset: Dataset().
         """
         if not isinstance(dataset, Dataset):
             raise TypeError
+        status = False
+        try:
+            dataset.name = self._render_name(dataset.title)
+            dataset.groups = self.build_groups(dataset.groups)
+            self.my_remote_ckan.action.package_update(**dataset.__dict__)
+            status = True
+        except NotAuthorized:
+            print 'No posee los permisos requeridos para crear el dataset {}'.format(dataset.title)
+        except ValidationError:
+            print 'No es posible crear el dataset \"{}\", el mismo ya existe.'.format(dataset.title)
+        return status
 
     def get_all_distrubutions(self):
         """
@@ -189,38 +196,82 @@ class CKANUploader(object):
         else:
             return self.my_remote_ckan.action.package_search()['results']
 
-    if __name__ == '__main__':
-        def save(self, dataset=None):
-            """
-            Guarda un dataset dentro de CKAN.
+    def retrieve_dataset_metadata(self, id_or_name=None):
+        """
+        Retorna metadata de un dataset.
 
-            Si el dataset existe, lo actualiza, si no, lo creo.
-            De la misma manera son tratadas las distribuciones que el mismo contenga.
+        Args:
+            - id_or_name: str(). nombre o id del dataset requerido
 
-            Args:
-                - dataset: Dataset().
-            Returns:
-                 - bool():
-                    - True se salvo correctamente el dataset.
-                    - False: Fallo la carga del dataset.
-            """
-            if not isinstance(dataset, (Dataset, list)):
-                raise TypeError
-            if isinstance(dataset, list):
-                # Si es una lista, solo voy a intentar salvar los
-                #  que son instancias de la clase Dataset.
-                for o in dataset:
-                    if isinstance(o, dataset):
-                        self.save(o)
-                    else:
-                        # Si dataset[n] no es Dataset lo omito.
-                        pass
-            if self.exists(id_or_name=dataset.name):
-                # Actualizo el dataset.
-                pass
-            else:
-                # Caso contrario, lo actualizo.
-                try:
-                    self.update(dataset=dataset)
-                except NotAuthorized:
-                    return False
+        Returns:
+            - dict():
+            - None: No existe el recurso.
+        """
+        if not isinstance(id_or_name, (unicode, str)):
+            raise TypeError
+        try:
+            ds = self.my_remote_ckan.call_action('package_show',
+                                                 data_dict={'id': id_or_name})
+            return ds
+        except Exception as e:
+            print e
+
+    def build_groups(self, groups=None, _selected_keys=None):
+        """Formatea los grupos para poder incluirlos dentro de la creacion | actualizacion de los datasets."""
+        fixed_groups = []
+        if not isinstance(groups, list):
+            raise TypeError('El argumento \"groups\" requiere ser una lista.')
+        if None in [_selected_keys]:
+            requiered_keys = ['id']
+        elif isinstance(_selected_keys, list):
+            requiered_keys = _selected_keys
+        else:
+            raise TypeError('El Argumento \"_selected_keys\" no puede ser {}'.format(type(_selected_keys)))
+        platform_groups_list = self.my_remote_ckan.action.group_list()
+        if False in [True for g in groups if g in platform_groups_list]:
+            raise ValueError('No esposible seleccionar el grupo especifico.')
+        for g in groups:
+            mg = self.my_remote_ckan.call_action('group_show', data_dict={'id': g})
+            fix_me = {}
+            for rk in requiered_keys:
+                fix_me.update({rk: mg[rk]})
+            fixed_groups.append(fix_me)
+        return fixed_groups
+
+    def save(self, dataset=None):
+        """
+        Guarda un dataset dentro de CKAN.
+
+        Si el dataset existe, lo actualiza, si no, lo creo.
+        De la misma manera son tratadas las distribuciones que el mismo contenga.
+
+        Args:
+            - dataset: Dataset().
+        Returns:
+             - bool():
+                - True se salvo correctamente el dataset.
+                - False: Fallo la carga del dataset.
+        """
+        status = False
+        if not isinstance(dataset, (Dataset, list)):
+            raise TypeError
+        if isinstance(dataset, list):
+            # Si es una lista, solo voy a intentar salvar los
+            #  que son instancias de la clase Dataset.
+            for o in dataset:
+                if isinstance(o, dataset):
+                    self.save(o)
+                else:
+                    # Si dataset[n] no es Dataset lo omito.
+                    pass
+        if 'resources' in dataset.__dict__.keys():
+            distributions = dataset.resources
+        if self.exists(id_or_name=self._render_name(dataset.title)):
+            # Actualizo el dataset.
+            if self.update_dataset(dataset=dataset):
+                status = True
+        else:
+            # Caso contrario, lo creo.
+            if self.create_dataset(dataset=dataset):
+                status = True
+        return status
