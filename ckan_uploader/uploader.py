@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from models import Dataset, Distribution
+from models import Dataset, Distribution, Errs
 from ckanapi import NotAuthorized, ValidationError
 
 
@@ -35,6 +35,7 @@ class CKANUploader(object):
         import logging
         logging.basicConfig(level=logging.INFO)
         self.log = logging.getLogger('{}.controller'.format(__name__))
+        self.errs = []
         import ckanapi
         self.my_remote_ckan = ckanapi.RemoteCKAN(self.host_url, apikey=self.api_key, user_agent=self.ua)
 
@@ -160,6 +161,31 @@ class CKANUploader(object):
                            ''.format(dataset.title))
         return status
 
+    def get_distributions(self, id_or_name=None, all_platform=False):
+        """
+        Retona lista de distribuciones contenidas dentro de un Dataset.
+
+        Args:
+            - id_or_name:
+                - Str().
+                - ID o NAME de un dataset.
+                - Si id_or_name no es unicode o str, sale con una exception TypeError.
+                - Si el id_or_name no existe dentro de la plataforma, sale con una Exception ValueError.
+        Returns:
+            - List()
+        """
+        # Validaciones de campos:
+        if not isinstance(id_or_name, (str, unicode)) or \
+                not isinstance(all_platform, bool):
+            err_msg = 'Los Argumentos provistos no son validos...'
+            self.log.error(err_msg)
+            raise TypeError(err_msg)
+        # Chequeo que exista el dataset seleccionado.
+        if not self.exists(id_or_name=id_or_name):
+            err_msg = 'No existe Dataset con ID o NAME == {}'.format(id_or_name)
+            self.log.error(err_msg)
+            raise ValueError(err_msg)
+
     def get_all_distrubutions(self):
         """
         Diccionario de distrubuciones disponibles en el CKAN remoto: self.ckan_url.
@@ -197,7 +223,9 @@ class CKANUploader(object):
                 - len(list) == n, lista de n datasets.
         """
         if not isinstance(only_names, bool):
-            raise TypeError('El agumento \"only_names\" requiere ser de tipo \"bool\".')
+            err_msg = 'El agumento \"only_names\" requiere ser de tipo \"bool\".'
+            self.log.error(err_msg)
+            raise TypeError(err_msg)
         if only_names:
             return self.my_remote_ckan.action.package_list()
         else:
@@ -233,10 +261,14 @@ class CKANUploader(object):
         elif isinstance(_selected_keys, list):
             requiered_keys = _selected_keys
         else:
-            raise TypeError('El Argumento \"_selected_keys\" no puede ser \"{}\"'.format(type(_selected_keys)))
+            err_msg = 'El Argumento \"_selected_keys\" no puede ser \"{}\"'.format(type(_selected_keys))
+            self.log.error(err_msg)
+            raise TypeError(err_msg)
         platform_groups_list = self.my_remote_ckan.action.group_list()
         if False in [True for g in groups if g in platform_groups_list]:
-            raise ValueError('No esposible seleccionar el grupo especifico.')
+            err_msg = 'No esposible seleccionar el grupo especifico.'
+            self.log.error(err_msg)
+            raise ValueError(err_msg)
         for g in groups:
             mg = self.my_remote_ckan.call_action('group_show', data_dict={'id': g})
             fix_me = {}
@@ -270,6 +302,7 @@ class CKANUploader(object):
                     self.save(o)
                 else:
                     # Si dataset[n] no es Dataset lo omito.
+                    self.log.info('Se omite {} por no ser una instancia de Dataset().'.format(o))
                     pass
         if 'resources' in dataset.__dict__.keys():
             distributions = dataset.resources
