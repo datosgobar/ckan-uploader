@@ -32,6 +32,9 @@ class CKANUploader(object):
         self.host_url = ckan_url
         self.api_key = ckan_api_key
         self.ua = 'ckan_uploader/1.0 (+https://github.com/datosgobar/ckan_uploader)'
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        self.log = logging.getLogger('{}.controller'.format(__name__))
         import ckanapi
         self.my_remote_ckan = ckanapi.RemoteCKAN(self.host_url, apikey=self.api_key, user_agent=self.ua)
 
@@ -127,9 +130,11 @@ class CKANUploader(object):
             self.my_remote_ckan.action.package_create(**dataset.__dict__)
             status = True
         except NotAuthorized:
-            print 'No posee los permisos requeridos para crear el dataset {}'.format(dataset.title)
+            self.log.error('No posee los permisos requeridos para crear el dataset {}.'
+                           ''.format(dataset.title))
         except ValidationError:
-            print 'No es posible crear el dataset \"{}\", el mismo ya existe.'.format(dataset.title)
+            self.log.error('No es posible crear el dataset \"{}\", el mismo ya existe.'
+                           ''.format(dataset.title))
         return status
 
     def update_dataset(self, dataset=None):
@@ -148,9 +153,11 @@ class CKANUploader(object):
             self.my_remote_ckan.action.package_update(**dataset.__dict__)
             status = True
         except NotAuthorized:
-            print 'No posee los permisos requeridos para crear el dataset {}'.format(dataset.title)
+            self.log.error('No posee los permisos requeridos para crear el dataset {}.'
+                           ''.format(dataset.title))
         except ValidationError:
-            print 'No es posible crear el dataset \"{}\", el mismo ya existe.'.format(dataset.title)
+            self.log.error('No es posible crear el dataset \"{}\", el mismo ya existe.'
+                           ''.format(dataset.title))
         return status
 
     def get_all_distrubutions(self):
@@ -214,7 +221,7 @@ class CKANUploader(object):
                                                  data_dict={'id': id_or_name})
             return ds
         except Exception as e:
-            print e
+            self.log.error(e)
 
     def build_groups(self, groups=None, _selected_keys=None):
         """Formatea los grupos para poder incluirlos dentro de la creacion | actualizacion de los datasets."""
@@ -226,7 +233,7 @@ class CKANUploader(object):
         elif isinstance(_selected_keys, list):
             requiered_keys = _selected_keys
         else:
-            raise TypeError('El Argumento \"_selected_keys\" no puede ser {}'.format(type(_selected_keys)))
+            raise TypeError('El Argumento \"_selected_keys\" no puede ser \"{}\"'.format(type(_selected_keys)))
         platform_groups_list = self.my_remote_ckan.action.group_list()
         if False in [True for g in groups if g in platform_groups_list]:
             raise ValueError('No esposible seleccionar el grupo especifico.')
@@ -266,12 +273,17 @@ class CKANUploader(object):
                     pass
         if 'resources' in dataset.__dict__.keys():
             distributions = dataset.resources
-        if self.exists(id_or_name=self._render_name(dataset.title)):
+        ds_name = self._render_name(dataset.title)
+        if self.exists(id_or_name=ds_name):
             # Actualizo el dataset.
+            self.log.info('El dataset \"{}\" existe, por tanto, se actualizara...'.format(ds_name))
             if self.update_dataset(dataset=dataset):
+                self.log.info('Dataset \"{}\" actualizado correctamente.'.format(ds_name))
                 status = True
         else:
             # Caso contrario, lo creo.
+            self.log.info('El dataset \"{d}\" no existe. Creando dataset \"{d}\"...'.format(d=ds_name))
             if self.create_dataset(dataset=dataset):
+                self.log.info('Dataset \"{}\" fue creado con exito.'.format(ds_name))
                 status = True
         return status
