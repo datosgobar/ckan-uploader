@@ -1,6 +1,151 @@
 # -*- coding: utf-8 -*-
 
 
+class Errs(object):
+    """
+    Minima clase para contener errores.
+    """
+    def __init__(self,
+                 _description='',
+                 _type='',
+                 _context=''):
+        import arrow
+        for v in [_description, _type, _context]:
+            if not isinstance(v, (str, unicode)):
+                raise TypeError()
+            if len(v) == 0:
+                raise ValueError('Todos los argumentos son requeridos, {_v},'
+                                 ' no puede ser len({_v})==0'.format(_v=v))
+        self.description = _description
+        self.type = _type
+        self.context = _context
+        self.timestamp = arrow.now()
+
+    def __str__(self):
+        """
+        Imprime en formato READABLE los datos del error.
+
+        Args:
+            - None.
+
+        Returns:
+            - str().
+        """
+        return '{ts}: {etype}: {context}: {desc}.'.format(ts=self.timestamp.format('YYYY-MM-DDTHH:mm:ss'),
+                                                          etype=self.type.upper(),
+                                                          context=self.context,
+                                                          desc=self.description)
+
+
+class MyLogger(object):
+    """
+    Manejo de Logs Mediante version extendida de logging.
+    """
+    def __init__(self, logger_name='', log_level='DEBUG'):
+        """
+        Init de la clase.
+
+        Args:
+            - logger_name:
+                - Str().
+                - No puede ser un string vacio.
+
+            - log_level:
+                - Str().
+                - No puede ser un string vacio.
+                - Solo se adminten cuatro valores posibles: DEBUG, INFO, ERROR, CRITICAL.
+        """
+        import logging
+        # Err types.
+        self.llevels = {
+            'DEBUG': logging.DEBUG,
+            'ERROR': logging.ERROR,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'CRITICAL': logging.CRITICAL,
+            'NOTSET': logging.NOTSET}
+
+        # ERR List.
+        self.errs = []
+
+        # Validaciones de Argumentos.
+        # Chequeo clase.
+        for v in [logger_name, log_level]:
+            if not isinstance(v, (unicode, str)):
+                raise TypeError('El Argumento {}, requiere ser de tipo: str o unicode.'.format(v))
+
+        # Chequeo contenido.
+        if len(logger_name) == 0:
+            raise ValueError('El Argumento logger_name, no puede ser un String vacio.')
+
+        # Chequeo de contenido.
+        if log_level.upper() not in self.llevels.keys():
+            raise ValueError('\"{}\", no es un valor aceptado para \"log_level\".')
+
+        # Creo instancia de logging
+        logging.basicConfig(level=self.llevels[log_level.upper()])
+        self.logg_inst = logging.getLogger(logger_name)
+
+    def error(self, msg='', _context='UNKNOW'):
+        self.__save_err(_msg=msg, _context=_context, _type='error')
+        self.logg_inst.error(msg)
+
+    def warning(self, msg='', _context='UNKNOW'):
+        self.__save_err(_msg=msg, _context=_context, _type='warning')
+        self.logg_inst.warning(msg)
+
+    def info(self, msg='', _context='UNKNOW'):
+        self.__save_err(_msg=msg, _context=_context, _type='info')
+        self.logg_inst.info(msg)
+
+    def debug(self, msg='', _context='UNKNOW'):
+        self.__save_err(_msg=msg, _context=_context, _type='debug')
+        self.logg_inst.debug(msg)
+
+    def critical(self, msg='', _context='UNKNOW'):
+        self.__save_err(_msg=msg, _context=_context, _type='critical')
+        self.logg_inst.critical(msg)
+
+    def __save_err(self, _msg, _type, _context):
+        """
+        Agrega el error ocurrido a la lista de errors.
+
+        Args:
+            - _msg: Str(). Mensaje de error.
+            - _type: Str(). Tipo de error.
+            - _context: Str(). Contexto en el cual ocurrio el error.
+
+        Returns:
+            - None.
+        """
+        self.errs.append(Errs(
+            _description=_msg,
+            _type=_type,
+            _context=_context))
+
+    def get_errors(self, _filter_by_type=''):
+        """
+        Devuelve lista de errores ocurridos.
+
+        Args:
+            _filter_by_type: Str(). Tipo de error.
+        Return:
+             - list().
+        """
+        err_list = []
+        if not (_filter_by_type, str, unicode):
+            raise TypeError('El Argumento _filter_by, requiere ser de tipo str o unicode.')
+        if _filter_by_type.upper() in self.llevels.keys():
+            # Retorno valores filtrados
+            for e in self.errs:
+                if e.type.upper() == _filter_by_type.upper():
+                    err_list.append(e)
+        elif _filter_by_type == '':
+            # Retorno todos
+            err_list = self.errs
+        return err_list
+
+
 class CKANElement(object):
     """Clase generica para contener elementos elementos de CKAN."""
 
