@@ -5,6 +5,7 @@ class Errs(object):
     """
     Minima clase para contener errores.
     """
+
     def __init__(self,
                  _description='',
                  _type='',
@@ -41,6 +42,7 @@ class MyLogger(object):
     """
     Manejo de Logs Mediante version extendida de logging.
     """
+
     def __init__(self, logger_name='', log_level='DEBUG'):
         """
         Init de la clase.
@@ -149,11 +151,12 @@ class MyLogger(object):
 class CKANElement(object):
     """Clase generica para contener elementos elementos de CKAN."""
 
-    def __init__(self, _required_keys=None, datadict=None, forced_keys=None):
+    def __init__(self, _required_keys=None, datadict=None, _forced_keys=None, context='dataset'):
         if not isinstance(_required_keys, list):
             raise TypeError('El argumento \"_required_keys\" requiere ser de tipo \"list\"')
         self.required_keys = _required_keys
-        self._load(datadict, forced_keys)
+        self.context = context
+        self._load(datadict, _forced_keys)
 
     def _load(self, datadict=None, _forced_keys=None):
         # Chequeo que dataset sea un Diccionario.
@@ -165,7 +168,8 @@ class CKANElement(object):
             # Si la clave requerida, no existe dentro de "datadict"
             # salgo con una exception KeyError.
             if rk not in datadict.keys():
-                raise KeyError('La clave: {}, es requerida.'.format(rk))
+                raise KeyError('{context}: La clave: \"{rk}\", es requerida.'.format(rk=rk,
+                                                                                 context=self.context))
             else:
                 # si la clave existe, la agrego.
                 setattr(self, rk, datadict[rk])
@@ -174,24 +178,54 @@ class CKANElement(object):
                 setattr(self, k, v)
 
 
+class Distribution(CKANElement):
+    """Clase contenedora para Distributions."""
+
+    def __init__(self, datadict=None, _file=None):
+        required_keys = ["state", "license_id",
+                         "description", "name", "url"]
+        fk = {}
+        if isinstance(_file, (str, unicode)):
+            import os
+            import helpers
+            if os.path.exists(_file):
+                fn = os.path.abspath(_file)
+                fk.update({'file': fn,
+                           'mimetype': helpers.get_mimetype(fn),
+                           'size': os.path.getsize(fn),
+                           'hash': helpers.build_hash(fn),
+                           })
+        fk.update({'package_id': ''})
+        super(Distribution, self).__init__(_required_keys=required_keys,
+                                           datadict=datadict,
+                                           _forced_keys=fk,
+                                           context='distribution')
+
+
 class Dataset(CKANElement):
     """Clase contenedora para Datasets."""
 
-    def __init__(self, datadict=None, _distributions=None):
+    def __init__(self, datadict=None, _distributions=None, _distribution_literal=False):
         required_keys = ["license_title", "maintainer", "private",
                          "maintainer_email", "author", "author_email",
                          "state", "type", "groups", "license_id",
                          "owner_org", "url", "notes", "owner_org",
-                         "license_url", "title", "title", "name"]
+                         "license_url", "isopen", "title", "title", "name"]
+        if not _distribution_literal:
+            if _distributions:
+                if isinstance(_distributions, Distribution):
+                    _distributions = [_distributions]
+                elif isinstance(_distributions, list):
+                    import helpers
+                    if not helpers.list_of(_distributions, Distribution):
+                        raise TypeError('Las distribuciones provistas, no son de tipo Distribution...')
+            else:
+                _distributions = []
+        elif not isinstance(_distributions, list):
+            raise TypeError('Las distrubuciones \"literales\", solo pueden ser de clase list.')
         super(Dataset, self).__init__(_required_keys=required_keys,
                                       datadict=datadict,
-                                      forced_keys={'resources': _distributions or []})
+                                      _forced_keys={'resources': _distributions,
+                                                    'package_id': ''})
 
 
-class Distribution(CKANElement):
-    """Clase contenedora para Distributions."""
-
-    def __init__(self, datadict=None):
-        required_keys = ["package_id", "size", "state", "license_id", "hash",
-                         "description", "format", "url_type", "mimetype", "name", "url"]
-        super(Distribution, self).__init__(required_keys, datadict)
