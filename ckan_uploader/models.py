@@ -13,7 +13,7 @@ class Errs(object):
         import arrow
         for v in [_description, _type, _context]:
             if not isinstance(v, (str, unicode)):
-                raise TypeError()
+                raise TypeError('La clase del argumento {} no es aceptable'.format(v))
             if len(v) == 0:
                 raise ValueError('Todos los argumentos son requeridos, {_v},'
                                  ' no puede ser len({_v})==0'.format(_v=v))
@@ -125,7 +125,7 @@ class MyLogger(object):
             _type=_type,
             _context=_context))
 
-    def get_errors(self, _filter_by_type=''):
+    def get_logs(self, _filter_by_type=''):
         """
         Devuelve lista de errores ocurridos.
 
@@ -154,6 +154,8 @@ class CKANElement(object):
     def __init__(self, _required_keys=None, datadict=None, _forced_keys=None, context='dataset'):
         if not isinstance(_required_keys, list):
             raise TypeError('El argumento \"_required_keys\" requiere ser de tipo \"list\"')
+        if context.lower() not in ['distribution', 'dataset']:
+            raise ValueError('No es posible seleccionar el contexto deseado [{}]'.format(context))
         self.required_keys = _required_keys
         self.context = context
         self._load(datadict, _forced_keys)
@@ -169,7 +171,7 @@ class CKANElement(object):
             # salgo con una exception KeyError.
             if rk not in datadict.keys():
                 raise KeyError('{context}: La clave: \"{rk}\", es requerida.'.format(rk=rk,
-                                                                                 context=self.context))
+                                                                                     context=self.context))
             else:
                 # si la clave existe, la agrego.
                 setattr(self, rk, datadict[rk])
@@ -206,6 +208,7 @@ class Dataset(CKANElement):
     """Clase contenedora para Datasets."""
 
     def __init__(self, datadict=None, _distributions=None, _distribution_literal=False):
+        import helpers
         required_keys = ["license_title", "maintainer", "private",
                          "maintainer_email", "author", "author_email",
                          "state", "type", "groups", "license_id",
@@ -219,9 +222,12 @@ class Dataset(CKANElement):
                     import helpers
                     if not helpers.list_of(_distributions, Distribution):
                         raise TypeError('Las distribuciones provistas, no son de tipo Distribution...')
+                else:
+                    _distributions = []
             else:
                 _distributions = []
-        elif not isinstance(_distributions, list):
+        elif not isinstance(_distributions, list) \
+                or not helpers.list_of(_distributions, dict):
             raise TypeError('Las distrubuciones \"literales\", solo pueden ser de clase list.')
         super(Dataset, self).__init__(_required_keys=required_keys,
                                       datadict=datadict,

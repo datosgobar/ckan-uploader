@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from mimetypes import MimeTypes
+from hashlib import md5
+
+
 def list_of(_list, _class):
     """
     Chequea que la lista _list contenga elementos del mismo tipo, desciptos en _class.
@@ -37,7 +41,7 @@ def get_mimetype(_filename=None):
          - Str(). MimeType. Exito.
          - None: Fallo.
     """
-    from mimetypes import MimeTypes
+
     try:
         mime = MimeTypes()
         return mime.guess_type(_filename)[0]
@@ -58,7 +62,6 @@ def build_hash(_filename):
          - Exito: Str() MD5-Hash.
          - Fallo: None.
     """
-    from hashlib import md5
 
     hash_md5 = md5()
     try:

@@ -1,11 +1,8 @@
 # -*- coding:utf-8 -*-
-import sys
 
-reload(sys)
-sys.setdefaultencoding('utf8')
 
 from models import Dataset, Distribution, MyLogger
-from ckanapi import NotAuthorized, ValidationError
+from ckanapi import NotAuthorized, ValidationError, NotFound
 
 
 class CKANUploader(object):
@@ -141,6 +138,10 @@ class CKANUploader(object):
         except ValidationError:
             self.log.error('No es posible crear el dataset \"{}\", el mismo ya existe.'
                            ''.format(dataset.title))
+        except NotFound:
+            self.log.error('No es posible crear el dataset \"{}\", alguno de los datos '
+                           'provistos no existen.')
+
         return status
 
     def update_dataset(self, dataset=None):
@@ -386,7 +387,7 @@ class CKANUploader(object):
             fixed_groups.append(fix_me)
         return fixed_groups
 
-    def _push_distribution(self, _d=None):
+    def _push_distribution(self, _d=None, update=False):
         """
         Carga a CKAN una distribucion.
 
@@ -403,31 +404,34 @@ class CKANUploader(object):
         _dis.update({'name': _d.name,
                      'description': _d.description.decode('utf-8')})
         try:
-            del _dis['required_keys']
+            del _dis['required_keys', 'context']
         except KeyError:
             pass
-
+        import os
         if 'file' in _d.__dict__.keys():
             # Metodo UPLOAD.
             _dis.update({'upload': open(_d.file, 'rb'),
                          'url_type': 'upload',
-                         'datastore_active': True})
+                         'url': os.path.basename(_d.file)})
 
         else:
             # Metodo 'LINK'
             self.log.info('Push method: LINK')
-            print _dis['url']
-            _dis.update({'link': _dis['url'],
+            _dis.update({'url': _dis['url'],
                          'url_type': 'link',
-                         'datastore_active': False})
-
+                         'resource_type': 'link',
+                         'datastore_active': True})
+        print _dis
         try:
-            self.my_remote_ckan.action.resource_create(**_dis)
+            print self.my_remote_ckan.action.resource_create(**_dis)
             status = True
         except NotAuthorized:
             self.log.critical('No posee permisos para actualizar|crear distribuciones.')
         except ValidationError:
-            self.log.critical('No es posible actualizar|crear el distribuciones con la data provista.')
+            self.log.critical('No es posible actualizar|crear la/las distribuciones con la data provista.')
+        except NotFound:
+            self.log.critical('No es posible actualizar|crear la/las distribuciones,'
+                              ' la informacion provista, no existe')
         return status
 
     def save(self, _obj=None):
