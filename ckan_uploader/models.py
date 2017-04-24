@@ -58,7 +58,7 @@ class MyLogger(object):
                 - Solo se adminten cuatro valores posibles: DEBUG, INFO, ERROR, CRITICAL.
         """
         import logging
-        # Err types.
+        # log types.
         self.llevels = {
             'DEBUG': logging.DEBUG,
             'ERROR': logging.ERROR,
@@ -67,7 +67,7 @@ class MyLogger(object):
             'CRITICAL': logging.CRITICAL,
             'NOTSET': logging.NOTSET}
 
-        # ERR List.
+        # log List.
         self.errs = []
 
         # Validaciones de Argumentos.
@@ -86,6 +86,7 @@ class MyLogger(object):
 
         # Creo instancia de logging
         logging.basicConfig(level=self.llevels[log_level.upper()])
+        self.log_level = log_level
         self.logg_inst = logging.getLogger(logger_name)
 
     def error(self, msg='', _context='UNKNOW'):

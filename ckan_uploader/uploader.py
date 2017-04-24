@@ -1,12 +1,17 @@
 # -*- coding:utf-8 -*-
 
 
+from ckanapi import NotAuthorized, ValidationError, NotFound, CKANAPIError
+from requests.auth import HTTPBasicAuth
+from requests.exceptions import *
+import requests
 from models import Dataset, Distribution, MyLogger
-from ckanapi import NotAuthorized, ValidationError, NotFound
 
 
 class CKANUploader(object):
-    def __init__(self, ckan_url=None, ckan_api_key=None):
+    def __init__(self, ckan_url='', ckan_api_key='',
+                 dp_user='', dp_pass='', dp_host='http://localhost',
+                 dp_port='8800'):
         """
         Inicializacion del Modulo CKANUploader
 
@@ -23,9 +28,7 @@ class CKANUploader(object):
                      - URL al portal de datos.
 
         """
-        if None in [ckan_api_key, ckan_url] or \
-                not isinstance(ckan_url, str) or \
-                not isinstance(ckan_api_key, str):
+        if False in [isinstance(arg, (str, unicode)) for arg in self.__init__.__code__.co_varnames]:
             raise TypeError
         if 0 in [len(ckan_api_key), len(ckan_url)]:
             # Si alguno de los argumentos provistos es de logitud 0
@@ -38,6 +41,15 @@ class CKANUploader(object):
                             log_level='INFO')
         import ckanapi
         self.my_remote_ckan = ckanapi.RemoteCKAN(self.host_url, apikey=self.api_key, user_agent=self.ua)
+        dp_con_vars = [dp_user, dp_pass, dp_host, dp_port]
+        self.dp_available = 0 not in [len(v) for v in dp_con_vars]
+        if self.dp_available:
+            self.dp_host = dp_host
+            self.dp_user = dp_user
+            self.dp_pass = dp_pass
+            self.dp_port = dp_port
+            self.dp_url = '{host}{port}'.format(host=dp_host,
+                                                port=':{}'.format(dp_port) if dp_port != '80' else '')
 
     def exists(self, id_or_name='', search_for_datasets=True):
         """
@@ -387,7 +399,11 @@ class CKANUploader(object):
             fixed_groups.append(fix_me)
         return fixed_groups
 
-    def _push_distribution(self, _d=None, update=False):
+    def _push_distribution(self,
+                           _d=None,
+                           update=False,
+                           only_metadata=False,
+                           _views=True):
         """
         Carga a CKAN una distribucion.
 
@@ -397,18 +413,57 @@ class CKANUploader(object):
                 - False, ocurrio un fallo al salvar la distribucion.
 
         """
+
+        def get_dp_status(_resource_id=''):
+            try:
+                with requests.Session() as s:
+                    # Iniciamos la session
+                    dp_host = self.dp_url
+                    s.get(url='{}/login'.format(dp_host),
+                          auth=HTTPBasicAuth(self.dp_user, self.dp_pass))
+                    jobs_list = s.get(url='{host}/job'.format(host=dp_host)).json()['list']
+                    for job in jobs_list:
+                        job_url = '{host}{uri}'.format(host=dp_host, uri=job)
+                        json_response = s.get(job_url).json()
+                        if json_response['metadata']['resource_id'] == _resource_id:
+                            return json_response['status'] != 'pending'
+            except ConnectionError:
+                self.log.critical('Imposible establecer conexion con el host:{}.'.format(self.dp_host))
+            except (Timeout, ReadTimeout):
+                self.log.critical('Tiempo de espera superado.')
+
+        def remove_from_datastore(resource_id):
+            """Remueve un recurdo del datastore."""
+            import time
+            while not get_dp_status(_resource_id=resource_id,
+                                    _password='hola',
+                                    _user='hola'):
+                pass
+            try:
+                r = self.my_remote_ckan.call_action('datastore_delete', {'resource_id': resource_id,
+                                                                         'force': True})
+                return {u'resource_id': unicode(resource_id)} == r
+            except CKANAPIError as ckan_api_msg:
+                print 'CKAN Err:', ckan_api_msg
+                time.sleep(1)
+                remove_from_datastore(resource_id)
+            return False
+
         status = False
         if not isinstance(_d, Distribution):
             raise TypeError('Distrubucion invalida.')
         _dis = _d.__dict__
         _dis.update({'name': _d.name,
                      'description': _d.description.decode('utf-8')})
-        try:
-            del _dis['required_keys', 'context']
-        except KeyError:
-            pass
+        invalid_args = ['required_keys', 'context']
+        for ia in invalid_args:
+            try:
+                del _dis[ia]
+            except KeyError:
+                pass
         import os
-        if 'file' in _d.__dict__.keys():
+        push_upload = 'file' in _d.__dict__.keys()
+        if push_upload:
             # Metodo UPLOAD.
             _dis.update({'upload': open(_d.file, 'rb'),
                          'url_type': 'upload',
@@ -418,23 +473,46 @@ class CKANUploader(object):
             # Metodo 'LINK'
             self.log.info('Push method: LINK')
             _dis.update({'url': _dis['url'],
-                         'url_type': 'link',
-                         'resource_type': 'link',
-                         'datastore_active': True})
-        print _dis
+                         'url_type': 'link'})
+        r = False
         try:
-            print self.my_remote_ckan.action.resource_create(**_dis)
-            status = True
+            if update:
+                r = self.my_remote_ckan.action.resource_update(**_dis)
+            else:
+                r = self.my_remote_ckan.action.resource_create(**_dis)
+            if r:
+                status = True
+
         except NotAuthorized:
             self.log.critical('No posee permisos para actualizar|crear distribuciones.')
-        except ValidationError:
+        except ValidationError, e:
             self.log.critical('No es posible actualizar|crear la/las distribuciones con la data provista.')
+            self.log.critical('CKAN Err: {}.'.format(e))
         except NotFound:
             self.log.critical('No es posible actualizar|crear la/las distribuciones,'
                               ' la informacion provista, no existe')
+        if not False in [only_metadata, status, not push_upload]:
+            if self.dp_available:
+
+                self.log.info('Limpiando recurso: {}.'.format(r['id']))
+                if remove_from_datastore(resource_id=r['id']):
+                    status = True
+                    self.log.info('hecho!')
+                else:
+                    self.log.critical('Ocurrio un fallo al limpiar el recurso \"{}\".'.format(r['id']))
+            else:
+                msg = '\n###########################ERROR###################################\n' \
+                      '# Imposible utilizar esta funcion, configuracion no disponible.   #\n' \
+                      '# Para utilizar la funcion de \"solo salvar metadata\" es requerido #\n' \
+                      '# que configures previamente tu datapusher user:pass@host:port.   #\n' \
+                      '###########################ERROR###################################\n'
+
+                raise Exception(msg)
         return status
 
-    def save(self, _obj=None):
+    def save(self, _obj=None,
+             only_metadata=False,
+             _views=True):
         """
         Guarda un _obj dentro de CKAN.
 
@@ -458,7 +536,9 @@ class CKANUploader(object):
             #  que son instancias de la clase _obj.
             for o in _obj:
                 if isinstance(o, (Dataset, Distribution)):
-                    self.save(o)
+                    self.save(_obj=o,
+                              only_metadata=only_metadata,
+                              _views=_views)
                 else:
                     # Si _obj[n] no es _obj o Distribution lo omito.
                     self.log.info('Se omite {} por no ser una instancia de '
@@ -468,7 +548,13 @@ class CKANUploader(object):
                 distributions = _obj.resources
                 _obj.resources = []
             ds_name = self._render_name(title=_obj.title)
-            if self.exists(id_or_name=ds_name.decode('utf-8 ')):
+
+            try:
+                ds_name = ds_name.decode('utf-8 ')
+            except UnicodeEncodeError:
+                pass
+
+            if self.exists(id_or_name=ds_name):
                 # Actualizo el _obj.
                 self.log.info('El _obj \"{}\" existe, por tanto, se actualizara.'.format(ds_name))
                 # Antes de actualizar debo bajar toda la metadata del dataset,
@@ -488,7 +574,9 @@ class CKANUploader(object):
                 self.log.info('Guardando distribuciones({})...'.format(len(distributions)))
                 for d in distributions:
                     d.package_id = ds_name
-                    self.save(d)
+                    self.save(_obj=d,
+                              only_metadata=only_metadata,
+                              _views=_views)
             return ds_status
         import helpers
         if isinstance(_obj, Distribution):
@@ -497,12 +585,19 @@ class CKANUploader(object):
                 self.log.info('Salvando Distribucion \"{}\".'.format(dist_name))
                 if self.exists(id_or_name=_obj.name, search_for_datasets=False):
                     self.log.info('Actualizando distribucion \"{}\".'.format(dist_name))
+                    if self._push_distribution(_d=_obj,
+                                               only_metadata=only_metadata,
+                                               _views=_views,
+                                               update=True):
+                        dis_status = True
                 else:
                     self.log.info('La distribucion \"%s\" no existe,'
                                   ' creando nueva distribucion.' % dist_name)
-                    if self._push_distribution(_obj):
+                    if self._push_distribution(_d=_obj,
+                                               only_metadata=only_metadata,
+                                               _views=_views):
                         dis_status = True
         elif helpers.list_of(_obj, Distribution):
             for m in _obj.__dict__.keys():
-                self.save(m)
+                self.save(m, only_metadata=only_metadata, _views=_views)
         return dis_status and ds_status
