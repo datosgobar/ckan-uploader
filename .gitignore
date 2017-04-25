@@ -91,4 +91,7 @@ ENV/
 # PyCharm Project folder
 .idea
 
-bin
+bin/
+local/
+include/
+pip-selfcheck.json
