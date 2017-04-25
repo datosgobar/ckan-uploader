@@ -1,16 +1,20 @@
+#!/usr/bin/env python
 # -*- coding: utf8 -*-
 from nose.tools import *
 from src.models import MyLogger, CKANElement, Errs, Dataset, Distribution
 from src.helpers import list_of, get_mimetype, build_hash
 from src.uploader import CKANUploader
 
-# Localhost
-# CKAN_APIKEY = 'b110b824-dd96-46f0-b25c-bed1fc21bcfa'
-# CKAN_HOST = 'http://localhost:5000'
+local_test = True
 
-# CKANDemo
-CKAN_HOST = 'http://demo.ckan.org'
-CKAN_APIKEY = 'c381dae0-fe59-48ee-b543-a240e0087dfa'
+if local_test:
+    # Localhost
+    CKAN_APIKEY = 'b110b824-dd96-46f0-b25c-bed1fc21bcfa'
+    CKAN_HOST = 'http://localhost:5000'
+else:
+    # CKANDemo
+    CKAN_HOST = 'http://demo.ckan.org'
+    CKAN_APIKEY = 'c381dae0-fe59-48ee-b543-a240e0087dfa'
 
 EXAMPLE_DATASET = {"license_title": "Una Licencia",
                    "maintainer": "Un mantenedor",
