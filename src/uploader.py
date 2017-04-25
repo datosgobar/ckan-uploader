@@ -1,16 +1,16 @@
-# -*- coding:utf-8 -*-
+import sys
 
-
-from ckanapi import NotAuthorized, ValidationError, NotFound, CKANAPIError
-from requests.auth import HTTPBasicAuth
-from requests.exceptions import *
-import requests
-from models import Dataset, Distribution, MyLogger
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 
 class CKANUploader(object):
-    def __init__(self, ckan_url='', ckan_api_key='',
-                 dp_user='', dp_pass='', dp_host='http://localhost',
+    def __init__(self,
+                 ckan_url='',
+                 ckan_api_key='',
+                 dp_user='',
+                 dp_pass='',
+                 dp_host='http://localhost',
                  dp_port='8800'):
         """
         Inicializacion del Modulo CKANUploader
@@ -28,6 +28,8 @@ class CKANUploader(object):
                      - URL al portal de datos.
 
         """
+        import ckanapi
+        from models import MyLogger
         if False in [isinstance(arg, (str, unicode)) for arg in self.__init__.__code__.co_varnames]:
             raise TypeError
         if 0 in [len(ckan_api_key), len(ckan_url)]:
@@ -36,10 +38,10 @@ class CKANUploader(object):
             raise ValueError
         self.host_url = ckan_url
         self.api_key = ckan_api_key
-        self.ua = 'ckan_uploader/1.0 (+https://github.com/datosgobar/ckan_uploader)'
+        self.ua = 'ckanuploader/1.0 (+https://github.com/datosgobar/ckanuploader)'
+
         self.log = MyLogger(logger_name='{}.controller'.format(__name__),
                             log_level='INFO')
-        import ckanapi
         self.my_remote_ckan = ckanapi.RemoteCKAN(self.host_url, apikey=self.api_key, user_agent=self.ua)
         dp_con_vars = [dp_user, dp_pass, dp_host, dp_port]
         self.dp_available = 0 not in [len(v) for v in dp_con_vars]
@@ -136,6 +138,8 @@ class CKANUploader(object):
         Returns:
              - TODO.
         """
+        from ckanapi import NotAuthorized, ValidationError, NotFound
+        from models import Dataset
         status = False
         if not isinstance(dataset, Dataset):
             raise TypeError
@@ -163,6 +167,8 @@ class CKANUploader(object):
         Args:
             - dataset: Dataset().
         """
+        from models import Dataset
+        from ckanapi import NotAuthorized, ValidationError
         if not isinstance(dataset, Dataset):
             raise TypeError
         status = False
@@ -257,6 +263,7 @@ class CKANUploader(object):
             TypeError:
                 - Uno o ambos argumentos, no son de clase Dataset.
         """
+        from models import Dataset
         for v in [dataset_a, dataset_b]:
             if not isinstance(v, Dataset):
                 raise TypeError('Para comparar los datasets ambos deben ser de clase Dataset.')
@@ -265,7 +272,7 @@ class CKANUploader(object):
         for k, v in dataset_a.__dict__.items():
             if k not in omit_this_keys:
                 if v != dataset_b.__dict__[k]:
-                    diff_ds.update({k: dataset_b.__dict__[k]})
+                    diff_ds.update({k: dataset_b.__dict__[k] if len(dataset_b.__dict__[k]) > 0 else v})
                 else:
                     diff_ds.update({k: v})
         return Dataset(datadict=diff_ds,
@@ -292,6 +299,7 @@ class CKANUploader(object):
             - TypeError:
                 - id_or_name no es un str o unicode.
         """
+        from models import Dataset
         stored_dataset = self.retrieve_dataset_metadata(id_or_name)
         if stored_dataset:
             freezed_dataset = {"license_title": stored_dataset['license_title'],
@@ -379,9 +387,9 @@ class CKANUploader(object):
         if not isinstance(groups, list):
             raise TypeError('El argumento \"groups\" requiere ser una lista.')
         if None in [_selected_keys]:
-            requiered_keys = ['id']
+            required_keys = ['id']
         elif isinstance(_selected_keys, list):
-            requiered_keys = _selected_keys
+            required_keys = _selected_keys
         else:
             err_msg = 'El Argumento \"_selected_keys\" no puede ser \"{}\"'.format(type(_selected_keys))
             self.log.error(err_msg)
@@ -394,7 +402,7 @@ class CKANUploader(object):
         for g in groups:
             mg = self.my_remote_ckan.call_action('group_show', data_dict={'id': g})
             fix_me = {}
-            for rk in requiered_keys:
+            for rk in required_keys:
                 fix_me.update({rk: mg[rk]})
             fixed_groups.append(fix_me)
         return fixed_groups
@@ -413,8 +421,12 @@ class CKANUploader(object):
                 - False, ocurrio un fallo al salvar la distribucion.
 
         """
+        from ckanapi.errors import CKANAPIError, NotFound, NotAuthorized, ValidationError
 
         def get_dp_status(_resource_id=''):
+            from requests.auth import HTTPBasicAuth
+            from requests.exceptions import ConnectionError, Timeout, ReadTimeout
+            import requests
             try:
                 with requests.Session() as s:
                     # Iniciamos la session
@@ -435,20 +447,20 @@ class CKANUploader(object):
         def remove_from_datastore(resource_id):
             """Remueve un recurdo del datastore."""
             import time
-            while not get_dp_status(_resource_id=resource_id,
-                                    _password='hola',
-                                    _user='hola'):
+
+            while not get_dp_status(_resource_id=resource_id):
                 pass
             try:
-                r = self.my_remote_ckan.call_action('datastore_delete', {'resource_id': resource_id,
-                                                                         'force': True})
-                return {u'resource_id': unicode(resource_id)} == r
+                ds_action = self.my_remote_ckan.call_action('datastore_delete', {'resource_id': resource_id,
+                                                                                 'force': True})
+                return {u'resource_id': unicode(resource_id)} == ds_action
             except CKANAPIError as ckan_api_msg:
                 print 'CKAN Err:', ckan_api_msg
                 time.sleep(1)
                 remove_from_datastore(resource_id)
             return False
 
+        from models import Distribution
         status = False
         if not isinstance(_d, Distribution):
             raise TypeError('Distrubucion invalida.')
@@ -491,7 +503,7 @@ class CKANUploader(object):
         except NotFound:
             self.log.critical('No es posible actualizar|crear la/las distribuciones,'
                               ' la informacion provista, no existe')
-        if not False in [only_metadata, status, not push_upload]:
+        if False not in [only_metadata, status, not push_upload]:
             if self.dp_available:
 
                 self.log.info('Limpiando recurso: {}.'.format(r['id']))
@@ -506,7 +518,6 @@ class CKANUploader(object):
                       '# Para utilizar la funcion de \"solo salvar metadata\" es requerido #\n' \
                       '# que configures previamente tu datapusher user:pass@host:port.   #\n' \
                       '###########################ERROR###################################\n'
-
                 raise Exception(msg)
         return status
 
@@ -526,6 +537,7 @@ class CKANUploader(object):
                 - True se salvo correctamente el _obj.
                 - False: Fallo la carga del _obj.
         """
+        from models import Dataset, Distribution
         ds_status = False
         dis_status = False
         distributions = []

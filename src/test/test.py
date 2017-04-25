@@ -1,11 +1,17 @@
 # -*- coding: utf8 -*-
 from nose.tools import *
-from ckan_uploader import uploader
-from ckan_uploader.models import MyLogger, CKANElement, Errs, Dataset, Distribution
-from ckan_uploader.helpers import list_of, get_mimetype, build_hash
+from ckanuploader.models import MyLogger, CKANElement, Errs, Dataset, Distribution
+from ckanuploader.helpers import list_of, get_mimetype, build_hash
+from ckanuploader.uploader import CKANUploader
 
-CKAN_HOST = 'http://localhost:5000'
-CKAN_APIKEY = 'b110b824-dd96-46f0-b25c-bed1fc21bcfa'
+# Localhost
+# CKAN_APIKEY = 'b110b824-dd96-46f0-b25c-bed1fc21bcfa'
+# CKAN_HOST = 'http://localhost:5000'
+
+# CKANDemo
+CKAN_HOST = 'http://demo.ckan.org'
+CKAN_APIKEY = 'c381dae0-fe59-48ee-b543-a240e0087dfa'
+
 EXAMPLE_DATASET = {"license_title": "Una Licencia",
                    "maintainer": "Un mantenedor",
                    "private": False,
@@ -52,7 +58,7 @@ DISTRIBUTION_OK = {"state": 'active',
                    "name": 'Nombre de mi distrubution'}
 
 
-@raises(TypeError)
+@raises(ValueError)
 def test_01_miss_args():
     """
     Crear instancia de CKANUploader
@@ -60,14 +66,15 @@ def test_01_miss_args():
     Hipotesis:
     =========
         Si no existen argumento la creacion del nueva instancia deberia lanzar,
-        una exception de tipo TypeError.
+        una exception de tipo ValueError.
 
 
     """
-    cl = uploader.CKANUploader()
+    cl = CKANUploader()
+    print cl.host_url  # Esta linea no sera ejecutada
 
 
-@raises(TypeError)
+@raises(ValueError)
 def test_02_wrong_types():
     """
     Crear instancia de CKANUploader con datos erroneos.
@@ -75,10 +82,11 @@ def test_02_wrong_types():
     Hipotesis:
     =========
         Si los argumentos provistos no son str(),
-        deberia lanzar una exception de tipo TypeError
+        deberia lanzar una exception de tipo ValueError
 
     """
-    cl = uploader.CKANUploader({}, [])
+    cl = CKANUploader({}, [])
+    print cl.host_url  # Esta linea no sera ejecutada
 
 
 @raises(ValueError)
@@ -92,7 +100,7 @@ def test_03_bad_apikey():
         deberia arrojarse una exception de tipo ValueError
 
     """
-    cl = uploader.CKANUploader(CKAN_HOST, '')
+    cl = CKANUploader(CKAN_HOST, '')
 
 
 def test_04_correct_init():
@@ -104,7 +112,8 @@ def test_04_correct_init():
         Si los argumentos provistos son str() y validos, la lib deberia inicializarse sin problemas.
 
     """
-    cl = uploader.CKANUploader(CKAN_HOST, CKAN_APIKEY)
+    cl = CKANUploader(CKAN_HOST, CKAN_APIKEY)
+    print cl.host_url  # Imprimimos las url de nuestro ckan remoto.
 
 
 def test_05_search_for_a_dataset():
@@ -116,7 +125,7 @@ def test_05_search_for_a_dataset():
         Cualquiera fuera el caso de test, exists simpre retorna bool.
 
     """
-    cl = uploader.CKANUploader(CKAN_HOST, CKAN_APIKEY)
+    cl = CKANUploader(CKAN_HOST, CKAN_APIKEY)
     assert_equals(isinstance(cl.exists('my_dataset'), bool), True)
 
 
@@ -129,7 +138,7 @@ def test_06_search_for_a_distribution():
         Cualquiera fuera el caso de test, exists simpre retorna bool.
 
     """
-    cl = uploader.CKANUploader(CKAN_HOST, CKAN_APIKEY)
+    cl = CKANUploader(CKAN_HOST, CKAN_APIKEY)
     assert_equals(isinstance(cl.exists('my_distribution', search_for_datasets=False), bool), True)
 
 
@@ -142,7 +151,7 @@ def test_07_get_datasets_list_returns_always_a_list():
         Cualquiera fuera el caso de test, get_datasets_list(), responde una lista.
 
     """
-    cl = uploader.CKANUploader(CKAN_HOST, CKAN_APIKEY)
+    cl = CKANUploader(CKAN_HOST, CKAN_APIKEY)
     assert_equals(isinstance(cl.get_datasets_list(), list), True)
 
 
@@ -155,7 +164,7 @@ def test_08_get_all_distributions_returns_always_a_dict():
         Cualquiera fuera el caso de test, get_datasets_list(), responde un diccionario.
 
     """
-    cl = uploader.CKANUploader(CKAN_HOST, CKAN_APIKEY)
+    cl = CKANUploader(CKAN_HOST, CKAN_APIKEY)
     assert_equals(isinstance(cl.get_all_distrubutions(), dict), True)
 
 

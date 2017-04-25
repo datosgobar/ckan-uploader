@@ -90,3 +90,5 @@ ENV/
 
 # PyCharm Project folder
 .idea
+
+bin
