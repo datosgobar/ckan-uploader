@@ -81,7 +81,7 @@ class CKANUploader(object):
 
         # Si id_or_name es una cadena vacia, salgo con un exception ValueError.
         if len(id_or_name) == 0:
-            raise ValueError
+            raise ValueError('El argumento id_or_name no puede ser de len()==0')
         # Si el flag search_for_datasets == True, busco sobre los datasets.
         if search_for_datasets:
             avalailable_datasets = self.my_remote_ckan.action.package_list()
@@ -441,8 +441,10 @@ class CKANUploader(object):
                             return json_response['status'] != 'pending'
             except ConnectionError:
                 self.log.critical('Imposible establecer conexion con el host:{}.'.format(self.dp_host))
+                raise ConnectionError
             except (Timeout, ReadTimeout):
                 self.log.critical('Tiempo de espera superado.')
+                raise Timeout
 
         def remove_from_datastore(resource_id):
             """Remueve un recurdo del datastore."""
@@ -603,8 +605,8 @@ class CKANUploader(object):
                                                update=True):
                         dis_status = True
                 else:
-                    self.log.info('La distribucion \"%s\" no existe,'
-                                  ' creando nueva distribucion.' % dist_name)
+                    self.log.info(
+                        'La distribucion \"%s\" no existe, creando nueva distribucion.' % dist_name)
                     if self._push_distribution(_d=_obj,
                                                only_metadata=only_metadata,
                                                _views=_views):
