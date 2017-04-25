@@ -1,4 +1,4 @@
-site_name: ckan_uploader
+site_name: ckanuploader
 
 pages:
     - Home: index.md
@@ -7,7 +7,7 @@ pages:
     - creditos: credits.md
 
 theme: readthedocs
-repo_url: https://github.com/datosgobar/ckan_uploader
+repo_url: https://github.com/datosgobar/ckanuploader
 site_author: Jose A. Salgado
 
 extra:
