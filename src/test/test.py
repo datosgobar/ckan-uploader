@@ -1,8 +1,8 @@
 # -*- coding: utf8 -*-
 from nose.tools import *
-from ckanuploader.models import MyLogger, CKANElement, Errs, Dataset, Distribution
-from ckanuploader.helpers import list_of, get_mimetype, build_hash
-from ckanuploader.uploader import CKANUploader
+from src.models import MyLogger, CKANElement, Errs, Dataset, Distribution
+from src.helpers import list_of, get_mimetype, build_hash
+from src.uploader import CKANUploader
 
 # Localhost
 # CKAN_APIKEY = 'b110b824-dd96-46f0-b25c-bed1fc21bcfa'
