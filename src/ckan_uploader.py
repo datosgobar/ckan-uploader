@@ -90,7 +90,7 @@ class CKANUploader(object):
             # Considero que estoy buscando una distribution
             all_distributions = self.get_all_distrubutions()
             dist_by_ids = [_id for _id in all_distributions.keys()]
-            dist_by_names = [all_distributions[_id] for _id in all_distributions.keys()]
+            dist_by_names = [self._render_name(all_distributions[_id]) for _id in all_distributions.keys()]
             return id_or_name in dist_by_ids or id_or_name in dist_by_names
 
     def _render_name(self, title=None, _encoding='utf-8'):
@@ -121,7 +121,7 @@ class CKANUploader(object):
                 text = text.encode('ascii', 'ignore')
                 text = text.decode("utf-8")
             except Exception as e:
-                self.log.error(str(e))
+                self.log.debug(str(e))
             return str(text)
 
         text = strip_accents(title.lower())
@@ -354,6 +354,27 @@ class CKANUploader(object):
         else:
             return self.my_remote_ckan.action.package_search()['results']
 
+    def get_resource_id(self, name=''):
+        """
+        Obtener el ID de un recurso.
+
+        Args:
+            - name:
+                - str().
+                - No admite len()==0.
+
+        Returns:
+             - None: No existe el recurso.
+             - Str(). Id de recurso.
+        """
+        all_distributions = self.get_all_distrubutions()
+        all_distributions_ids = [_id for _id in all_distributions.keys()]
+        all_distributions_name = [self._render_name(n) for n in all_distributions.values()]
+        fixed_name = self._render_name(name)
+        if fixed_name in all_distributions_name:
+            _index = all_distributions_name.index(fixed_name)
+            return all_distributions_ids[_index]
+
     def retrieve_dataset_metadata(self, id_or_name=None):
         """
         Retorna metadata de un dataset.
@@ -491,6 +512,7 @@ class CKANUploader(object):
         r = False
         try:
             if update:
+                _dis.update({'id': self.get_resource_id(name=_dis['name'])})
                 r = self.my_remote_ckan.action.resource_update(**_dis)
             else:
                 r = self.my_remote_ckan.action.resource_create(**_dis)
@@ -533,7 +555,9 @@ class CKANUploader(object):
         De la misma manera son tratadas las distribuciones que el mismo contenga.
 
         Args:
-            - _obj: _obj().
+            - _obj: _obj(). Objeto de que se desea salvar.
+            - only_metadata: bool(). Pushear solo metadata.
+            - _views: bool(). Flag. Mantener vistas remotas o eliminar.
         Returns:
              - bool():
                 - True se salvo correctamente el _obj.
@@ -561,6 +585,8 @@ class CKANUploader(object):
             if 'resources' in _obj.__dict__.keys():
                 distributions = _obj.resources
                 _obj.resources = []
+            else:
+                dis_status = True
             ds_name = self._render_name(title=_obj.title)
 
             try:
@@ -597,7 +623,7 @@ class CKANUploader(object):
             if isinstance(_obj, Distribution):
                 dist_name = _obj.name
                 self.log.info('Salvando Distribucion \"{}\".'.format(dist_name))
-                if self.exists(id_or_name=_obj.name, search_for_datasets=False):
+                if self.exists(id_or_name=self._render_name(dist_name), search_for_datasets=False):
                     self.log.info('Actualizando distribucion \"{}\".'.format(dist_name))
                     if self._push_distribution(_d=_obj,
                                                only_metadata=only_metadata,

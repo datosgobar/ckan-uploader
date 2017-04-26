@@ -5,10 +5,10 @@ with open("requirements.txt") as f:
     requirements = [req.strip() for req in f.readlines()]
 
 setup(
-    name='ckan-uploader',
+    name='ckan_uploader',
     version='0.1',
     packages=find_packages(),
-    description='short description',  # groso beni!
+    description='short description',
     long_description='long description',
     author='DatosAr',
     author_email='',

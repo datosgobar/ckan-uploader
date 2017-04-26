@@ -3,7 +3,7 @@
 from nose.tools import *
 from src.models import MyLogger, CKANElement, Errs, Dataset, Distribution
 from src.helpers import list_of, get_mimetype, build_hash
-from src.uploader import CKANUploader
+from src.ckan_uploader import CKANUploader
 
 local_test = True
 
