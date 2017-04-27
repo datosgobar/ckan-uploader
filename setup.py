@@ -22,7 +22,7 @@ setup(
     install_requires=requirements,
     license="ISCL",
     zip_safe=False,
-    download_url='https://github.com/datosgobar/ckan-uploader/releases/tag/rc1.0',
+    download_url='https://github.com/datosgobar/ckan-uploader/tarball/rc1.0',
     keywords='ckan-uploader ckan resources',
     entry_points="""""",
 )
