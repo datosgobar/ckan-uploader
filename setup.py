@@ -3,8 +3,8 @@ from setuptools import setup
 
 setup(
     name='ckan_uploader',
-    version='0.1.1',
-    packages={'ckan-uploader': 'ckan_uploader'},
+    version='0.1.2',
+    packages={'ckan_uploader': 'ckan_uploader'},
     description='Carga y actualizacion de recursos remotos en una plataforma CKAN 2.5.3+',
     long_description='Librería de python para la carga y actualizacion '
                      'de recursos remotos en una plataforma CKAN 2.5.3+',
@@ -26,6 +26,4 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
-    ],
-    entry_points="""""",
-)
+    ])
