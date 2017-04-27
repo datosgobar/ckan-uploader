@@ -10,7 +10,7 @@ with open(requirements_file) as f:
 
 setup(
     name='ckan_uploader',
-    version='0.1',
+    version='0.1.1',
     packages=find_packages(),
     description='Carga y actualizacion de recursos remotos en una plataforma CKAN 2.5.3+',
     long_description='Librería de python para la carga y actualizacion '
