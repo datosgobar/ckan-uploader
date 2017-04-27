@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 from nose.tools import *
-from src.models import MyLogger, CKANElement, Errs, Dataset, Distribution
-from src.helpers import list_of, get_mimetype, build_hash
-from src.ckan_uploader import CKANUploader
+from ckan_uploader.models import MyLogger, CKANElement, Errs, Dataset, Distribution
+from ckan_uploader.helpers import list_of, get_mimetype, build_hash
+from ckan_uploader.ckan_uploader import CKANUploader
 
 local_test = True
 
