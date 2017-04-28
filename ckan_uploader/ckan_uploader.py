@@ -472,7 +472,7 @@ class CKANUploader(object):
             try:
                 import time
                 trys = 0
-                while not get_dp_status(_resource_id=resource_id) and trys > 100:
+                while not get_dp_status(_resource_id=resource_id) and trys > 10000:
                     trys += 1
                     time.sleep(1)
                 if trys > 100:
