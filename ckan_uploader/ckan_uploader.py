@@ -467,21 +467,33 @@ class CKANUploader(object):
                 self.log.critical('Tiempo de espera superado.')
                 raise Timeout
 
-        def remove_from_datastore(resource_id):
+        def remove_from_datastore(resource_id, gtrys=0):
             """Remueve un recurdo del datastore."""
-            import time
-
-            while not get_dp_status(_resource_id=resource_id):
-                pass
             try:
-                ds_action = self.my_remote_ckan.call_action('datastore_delete', {'resource_id': resource_id,
-                                                                                 'force': True})
-                return {u'resource_id': unicode(resource_id)} == ds_action
-            except CKANAPIError as ckan_api_msg:
-                print 'CKAN Err:', ckan_api_msg
-                time.sleep(1)
-                remove_from_datastore(resource_id)
-            return False
+                import time
+                trys = 0
+                while not get_dp_status(_resource_id=resource_id) and trys > 100:
+                    trys += 1
+                    time.sleep(1)
+                if trys > 100:
+                    self.log.warning('El servicio remoto de Datapusher no parece estar funcionando...')
+                try:
+                    ds_action = self.my_remote_ckan.call_action('datastore_delete', {'resource_id': resource_id,
+                                                                                     'force': True})
+                    return {u'resource_id': unicode(resource_id)} == ds_action
+                except CKANAPIError as ckan_api_msg:
+                    # print 'CKAN Err:', ckan_api_msg
+                    # time.sleep(1)
+                    gtrys += 1
+                    if gtrys < 500:
+                        time.sleep(1)
+                        remove_from_datastore(resource_id, gtrys=gtrys)
+                    else:
+                        self.log.warning('Es imposible quitar este recurso del datastore, no existe...')
+                        return True
+                return False
+            except Exception as e:
+                self.log.error('Ocurrio un error en la limpieza de recursos...\n error:{}'.format(e))
 
         from models import Distribution
         status = False

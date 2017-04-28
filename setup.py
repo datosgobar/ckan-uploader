@@ -1,28 +1,29 @@
 # coding=utf-8
-from setuptools import setup, find_packages
-import os
-
-here = os.path.dirname(__file__)
-requirements_file = os.path.join(here, 'requirements.txt')
-
-with open(requirements_file) as f:
-    requirements = [req.strip() for req in f.readlines()]
+from setuptools import setup
 
 setup(
     name='ckan_uploader',
-    version='0.1',
-    packages=find_packages(),
+    version='0.1.2',
+    packages={'ckan_uploader': 'ckan_uploader'},
     description='Carga y actualizacion de recursos remotos en una plataforma CKAN 2.5.3+',
     long_description='Librería de python para la carga y actualizacion '
                      'de recursos remotos en una plataforma CKAN 2.5.3+',
-    author='Jose A. Salgado',
-    author_email='jose.salgado.wrk@gmail.com',
+    author='Datos Argentina',
+    author_email='datos@modernizacion.gob.ar',
     url='https://github.com/datosgobar/ckan-uploader',
     include_package_data=True,
-    install_requires=requirements,
+    install_requires=[
+        'requests>=2.13.0',
+        'ckanapi>=4.0',
+        'arrow>=0.10.0',
+        'httmock==1.2.6'
+    ],
     license="ISCL",
     zip_safe=False,
-    download_url='https://github.com/datosgobar/ckan-uploader/releases/tag/rc1.0',
-    keywords='ckan-uploader ckan resources',
-    entry_points="""""",
-)
+    keywords='ckan_uploader ckan resources',
+    classifiers=[
+        'Development Status :: 2 - Pre-Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 2.7',
+    ])
