@@ -35,7 +35,7 @@ class CKANUploader(object):
         if 0 in [len(ckan_api_key), len(ckan_url)]:
             # Si alguno de los argumentos provistos es de logitud 0
             # "suelto" una exception ValueError
-            raise ValueError
+            raise ValueError('Los Argumentos [\'ckan_url\',\'ckan_api_key\']')
         self.host_url = ckan_url
         self.api_key = ckan_api_key
         self.ua = 'ckanuploader/1.0 (+https://github.com/datosgobar/ckanuploader)'
