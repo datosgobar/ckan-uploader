@@ -402,6 +402,36 @@ class CKANUploader(object):
         except Exception as e:
             self.log.error(e)
 
+    def clean_all_views(self, resource_id):
+        """
+        Elimina las vistas creadas para un recurso de id==resource_id.
+        Args:
+            - resource_id:
+                - str|unicode.
+                - not None.
+                - Not len(resource_id) == 0.
+        """
+        import ckanapi
+        try:
+            resource_views = self.my_remote_ckan.call_action('esource_view_list',
+                                                             {'id': resource_id})
+            for view in resource_views:
+                view_id = view['result']['id']
+                if self.my_remote_ckan.call_action('resource_view_delete',
+                                                   {'id':view_id}):
+                    pass
+                else:
+                    self.log.warning('No fue posible eliminar la vista: \'{}\''
+                                     ' del recurso \'{}\'.'.format(view_id,
+                                                                   resource_id))
+        except ckanapi.ValidationError:
+            self.log.error('resource_id invalido({})'.format(resource_id))
+            return False
+
+        except ckanapi.NotFound:
+            self.log.warning('No se encontraron vistas para el recurso:\'{}\''.format(resource_id))
+            return False
+
     def build_groups(self, groups=None, _selected_keys=None):
         """Formatea los grupos para poder incluirlos dentro de la creacion | actualizacion de los datasets."""
         fixed_groups = []
@@ -541,7 +571,6 @@ class CKANUploader(object):
                               ' la informacion provista, no existe')
         if False not in [only_metadata, status, not push_upload]:
             if self.dp_available:
-
                 self.log.info('Limpiando recurso: {}.'.format(r['id']))
                 if remove_from_datastore(resource_id=r['id']):
                     status = True
@@ -555,6 +584,8 @@ class CKANUploader(object):
                       '# que configures previamente tu datapusher user:pass@host:port.   #\n' \
                       '###########################ERROR###################################\n'
                 raise Exception(msg)
+        if _views:
+            self.clean_all_views(r['id'])
         return status
 
     def save(self, _obj=None,
