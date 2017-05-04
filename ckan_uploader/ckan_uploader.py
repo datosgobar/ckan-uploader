@@ -571,7 +571,7 @@ class CKANUploader(object):
                               ' la informacion provista, no existe')
         if False not in [only_metadata, status, not push_upload]:
             if self.dp_available:
-                self.log.info('Limpiando recurso: {}.'.format(r['id']))
+                self.log.info('Li   mpiando recurso: {}.'.format(r['id']))
                 if remove_from_datastore(resource_id=r['id']):
                     status = True
                     self.log.info('hecho!')
