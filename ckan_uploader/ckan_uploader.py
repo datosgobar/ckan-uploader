@@ -53,7 +53,7 @@ class CKANUploader(object):
             self.dp_url = '{host}{port}'.format(host=dp_host,
                                                 port=':{}'.format(dp_port) if dp_port != '80' else '')
 
-    def exists(self, id_or_name='', search_for_datasets=True):
+    def exists(self, id_or_name='', search_for_datasets=True, _fformat='csv'):
         """
         Chequea la existencia de un Dataset o un recurso.
 
@@ -88,12 +88,17 @@ class CKANUploader(object):
             return id_or_name in avalailable_datasets
         else:
             # Considero que estoy buscando una distribution
+            dist_by_ids = []
+            dist_by_names_types = []
+            wantednf = '{name}_{f}'.format(name=id_or_name, f=_fformat)
             all_distributions = self.get_all_distrubutions()
-            dist_by_ids = [_id for _id in all_distributions.keys()]
-            dist_by_names = [self._render_name(all_distributions[_id]) for _id in all_distributions.keys()]
-            return id_or_name in dist_by_ids or id_or_name in dist_by_names
+            for _id in all_distributions.keys():
+                dist_by_ids.append(_id)
+                dist_by_names_types.append('{name}_{f}'.format(name=self.render_name(all_distributions[_id]['name']) ,
+                                                               f=all_distributions[_id]['format']))
+            return id_or_name in dist_by_ids or wantednf in dist_by_names_types
 
-    def _render_name(self, title=None, _encoding='utf-8'):
+    def render_name(self, title=None, _encoding='utf-8'):
         """
         Formatea cadenas de textos a formato de nombres para ckan.
 
@@ -144,7 +149,7 @@ class CKANUploader(object):
         if not isinstance(dataset, Dataset):
             raise TypeError
         try:
-            dataset.name = self._render_name(dataset.title)
+            dataset.name = self.render_name(dataset.title)
             dataset.groups = self.build_groups(dataset.groups)
             self.my_remote_ckan.action.package_create(**dataset.__dict__)
             status = True
@@ -178,7 +183,7 @@ class CKANUploader(object):
             if k in update_this_dataset.keys():
                 del update_this_dataset[k]
         try:
-            update_this_dataset['name'] = self._render_name(dataset.title)
+            update_this_dataset['name'] = self.render_name(dataset.title)
             update_this_dataset['groups'] = self.build_groups(dataset.groups)
             self.my_remote_ckan.action.package_update(**update_this_dataset)
             status = True
@@ -189,31 +194,6 @@ class CKANUploader(object):
             self.log.error('No es posible crear el dataset \"{}\", el mismo ya existe.'
                            ''.format(dataset.title))
         return status
-
-    def get_distributions(self, id_or_name=None, all_platform=False):
-        """
-        Retona lista de distribuciones contenidas dentro de un Dataset.
-
-        Args:
-            - id_or_name:
-                - Str().
-                - ID o NAME de un dataset.
-                - Si id_or_name no es unicode o str, sale con una exception TypeError.
-                - Si el id_or_name no existe dentro de la plataforma, sale con una Exception ValueError.
-        Returns:
-            - List()
-        """
-        # Validaciones de campos:
-        if not isinstance(id_or_name, (str, unicode)) or \
-                not isinstance(all_platform, bool):
-            err_msg = 'Los Argumentos provistos no son validos...'
-            self.log.error(err_msg)
-            raise TypeError(err_msg)
-        # Chequeo que exista el dataset seleccionado.
-        if not self.exists(id_or_name=id_or_name):
-            err_msg = 'No existe Dataset con ID o NAME == {}'.format(id_or_name)
-            self.log.error(err_msg)
-            raise ValueError(err_msg)
 
     def get_all_distrubutions(self):
         """
@@ -227,13 +207,20 @@ class CKANUploader(object):
         ========
             - dict().
         """
+        # Aqui hay que hacer una modificacion dado ckan admite que
+        # varios recursos, al menos dos, posean el mismo nombre, si el mismo
+        # es de otro tipo. Esto se debe a que para ckan Dataset['resources']['name']
+        # es solo un Label, no un nombre real, asi como tampoco un identificador
+        # real.
         distributions = {}
         all_datasets = self.my_remote_ckan.action.package_list()
         for dataset in all_datasets:
             ds_dist = self.my_remote_ckan.call_action('package_show', {'id': dataset})
             ds_dist = ds_dist['resources']
             for d in ds_dist:
-                distributions.update({d['id']: d['name']})
+                distributions.update({d['id']: {'name': d['name'],
+                                                'format': d['format']}})
+                # distributions.update({d['id']: d['name']})
         return distributions
 
     @staticmethod
@@ -368,9 +355,12 @@ class CKANUploader(object):
              - Str(). Id de recurso.
         """
         all_distributions = self.get_all_distrubutions()
-        all_distributions_ids = [_id for _id in all_distributions.keys()]
-        all_distributions_name = [self._render_name(n) for n in all_distributions.values()]
-        fixed_name = self._render_name(name)
+        all_distributions_ids = []
+        all_distributions_name = []
+        for _id in all_distributions.keys():
+            all_distributions_ids.append(_id)
+            all_distributions_name.append(self.render_name(all_distributions[_id]['name']))
+        fixed_name = self.render_name(name)
         if fixed_name in all_distributions_name:
             _index = all_distributions_name.index(fixed_name)
             return all_distributions_ids[_index]
@@ -418,7 +408,7 @@ class CKANUploader(object):
             for view in resource_views:
                 view_id = view['result']['id']
                 if self.my_remote_ckan.call_action('resource_view_delete',
-                                                   {'id':view_id}):
+                                                   {'id': view_id}):
                     pass
                 else:
                     self.log.warning('No fue posible eliminar la vista: \'{}\''
@@ -630,7 +620,7 @@ class CKANUploader(object):
                 _obj.resources = []
             else:
                 dis_status = True
-            ds_name = self._render_name(title=_obj.title)
+            ds_name = self.render_name(title=_obj.title)
 
             try:
                 ds_name = ds_name.decode('utf-8 ')
@@ -666,7 +656,7 @@ class CKANUploader(object):
             if isinstance(_obj, Distribution):
                 dist_name = _obj.name
                 self.log.info('Salvando Distribucion \"{}\".'.format(dist_name))
-                if self.exists(id_or_name=self._render_name(dist_name), search_for_datasets=False):
+                if self.exists(id_or_name=self.render_name(dist_name), search_for_datasets=False):
                     self.log.info('Actualizando distribucion \"{}\".'.format(dist_name))
                     if self._push_distribution(_d=_obj,
                                                only_metadata=only_metadata,
