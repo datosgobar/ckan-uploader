@@ -186,7 +186,8 @@ class Distribution(CKANElement):
 
     def __init__(self, datadict=None, _file=None):
         required_keys = ["state", "license_id",
-                         "description", "name", "url"]
+                         "description", "name", "url",
+                         "format"]
         fk = {}
         if isinstance(_file, (str, unicode)):
             import os

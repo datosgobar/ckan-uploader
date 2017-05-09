@@ -656,7 +656,9 @@ class CKANUploader(object):
             if isinstance(_obj, Distribution):
                 dist_name = _obj.name
                 self.log.info('Salvando Distribucion \"{}\".'.format(dist_name))
-                if self.exists(id_or_name=self.render_name(dist_name), search_for_datasets=False):
+                if self.exists(id_or_name=self.render_name(dist_name),
+                               search_for_datasets=False,
+                               _fformat=_obj.format):
                     self.log.info('Actualizando distribucion \"{}\".'.format(dist_name))
                     if self._push_distribution(_d=_obj,
                                                only_metadata=only_metadata,
