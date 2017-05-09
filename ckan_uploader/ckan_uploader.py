@@ -403,7 +403,7 @@ class CKANUploader(object):
         """
         import ckanapi
         try:
-            resource_views = self.my_remote_ckan.call_action('esource_view_list',
+            resource_views = self.my_remote_ckan.call_action('resource_view_list',
                                                              {'id': resource_id})
             for view in resource_views:
                 view_id = view['result']['id']
