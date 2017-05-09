@@ -1,0 +1,89 @@
+{
+  "help": "http://demo.ckan.org/api/3/action/help_show?name=package_show",
+  "success": true,
+  "result": {
+    "license_title": "Creative Commons Attribution",
+    "license_url": "http://www.opendefinition.org/licenses/cc-by",
+    "maintainer": "Some Maintainer",
+    "relationships_as_object": [],
+    "private": false,
+    "maintainer_email": "maintainer@email.com",
+    "num_tags": 2,
+    "id": "0678bcc6-65b2-4a5c-b251-e1bb9b03aaf3",
+    "metadata_created": "2017-05-04T19:11:04.407375",
+    "metadata_modified": "2017-05-04T19:29:29.865995",
+    "author": "Andino",
+    "author_email": "author@email.com",
+    "state": "active",
+    "version": null,
+    "creator_user_id": "e4653e45-1ef4-4198-b515-ccb6d527f180",
+    "type": "dataset",
+    "resources": [
+      {
+        "cache_last_updated": null,
+        "package_id": "0678bcc6-65b2-4a5c-b251-e1bb9b03aaf3",
+        "webstore_last_updated": null,
+        "datastore_active": false,
+        "id": "fa05d5c0-7a2d-4ea5-9539-08e9bbe71e23",
+        "size": null,
+        "state": "active",
+        "hash": "",
+        "description": "",
+        "format": "JPEG",
+        "last_modified": null,
+        "url_type": "link",
+        "mimetype": null,
+        "cache_url": null,
+        "name": "Mi Recurso del Ejemplo",
+        "created": "2017-05-04T19:25:10.673417",
+        "url": "",
+        "webstore_url": null,
+        "mimetype_inner": null,
+        "position": 1,
+        "revision_id": "6100555d-78aa-4c7a-af8e-b3b108a87704",
+        "resource_type": null
+      }
+    ],
+    "num_resources": 1,
+    "tags": [
+      {
+        "vocabulary_id": null,
+        "state": "active",
+        "display_name": "tag1",
+        "id": "de5c1397-92bd-49a5-a407-f248957bb9aa",
+        "name": "tag1"
+      },
+      {
+        "vocabulary_id": null,
+        "state": "active",
+        "display_name": "tag2",
+        "id": "af9fd176-159a-4b3d-992f-7c6b63454380",
+        "name": "tag2"
+      }
+    ],
+    "groups": [],
+    "license_id": null,
+    "relationships_as_subject": [],
+    "organization": {
+      "description": "Desc. de la organizacion.",
+      "created": "2017-05-04T18:39:20.234625",
+      "title": "Organization 01",
+      "name": "organization-01",
+      "is_organization": true,
+      "state": "active",
+      "image_url": "",
+      "revision_id": "062aea2f-57ed-4ea8-b444-907adcaf0a4d",
+      "type": "organization",
+      "id": "a8c81406-0c96-4b10-b4dc-606cf3777416",
+      "approval_status": "approved"
+    },
+    "name": "dataset-01-test",
+    "isopen": false,
+    "url": null,
+    "notes": null,
+    "owner_org": "a8c81406-0c96-4b10-b4dc-606cf3777416",
+    "extras": [],
+    "title": "Dataset 01 Test",
+    "revision_id": "ee7170dc-f1b1-465b-87b6-1d1a9d708d3a"
+  }
+}

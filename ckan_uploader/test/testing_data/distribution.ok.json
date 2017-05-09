@@ -1,0 +1,7 @@
+{
+  "state": "active",
+  "license_id": "un id de licencia",
+  "description": "Description para mi distribution",
+  "url": "http://host.com",
+  "name": "Nombre de mi distrubution"
+}

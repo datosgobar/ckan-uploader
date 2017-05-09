@@ -1,0 +1,23 @@
+{
+  "license_title": "Una Licencia",
+  "maintainer": "Un mantenedor",
+  "private": false,
+  "maintainer_email": "mantenedor@mail.com",
+  "id": "12345678-aaaa-bbbb-cccc-1234567890123",
+  "owner_org": "12345678-aaaa-bbbb-cccc-1234567890123",
+  "author": "un autor",
+  "author_email": "autor@mail.com",
+  "state": "active",
+  "type": "dataset",
+  "groups": [
+    "un-grupo-de-ejemplo",
+    "otro-grupo-de-ejemplos"
+  ],
+  "creator_user_id": "12345678-aaaa-bbbb-cccc-1234567890123",
+  "name": "",
+  "isopen": true,
+  "url": "",
+  "notes": "Una descripcion para este dataset",
+  "title": "Un titulo para el dataset.",
+  "license_url": "http://www.opendefinition.org/licenses/cc-by"
+}
