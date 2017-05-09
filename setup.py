@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='ckan_uploader',
-    version='0.1.3',
+    version='0.1.4',
     packages={'ckan_uploader': 'ckan_uploader'},
     description='Carga y actualizacion de recursos remotos en una plataforma CKAN 2.5.3+',
     long_description='Librería de python para la carga y actualizacion '
