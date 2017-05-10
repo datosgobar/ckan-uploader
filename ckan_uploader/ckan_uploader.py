@@ -405,6 +405,7 @@ class CKANUploader(object):
         try:
             resource_views = self.my_remote_ckan.call_action('resource_view_list',
                                                              {'id': resource_id})
+
             for view in resource_views:
                 view_id = view['result']['id']
                 if self.my_remote_ckan.call_action('resource_view_delete',
@@ -417,6 +418,8 @@ class CKANUploader(object):
         except ckanapi.ValidationError:
             self.log.error('resource_id invalido({})'.format(resource_id))
             return False
+        except Exception:
+            pass
 
         except ckanapi.NotFound:
             self.log.warning('No se encontraron vistas para el recurso:\'{}\''.format(resource_id))
