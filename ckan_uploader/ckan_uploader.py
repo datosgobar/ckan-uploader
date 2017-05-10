@@ -578,7 +578,8 @@ class CKANUploader(object):
                       '###########################ERROR###################################\n'
                 raise Exception(msg)
         if _views:
-            self.clean_all_views(r['id'])
+            # self.clean_all_views(r['id'])
+            pass
         return status
 
     def save(self, _obj=None,
